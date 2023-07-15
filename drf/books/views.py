@@ -7,6 +7,11 @@ from books.models import Books
 from books.serializers import BooksSerializer
 
 
+class BooksAPIList(generics.ListCreateAPIView):
+    queryset = Books.objects.all()
+    serializer_class = BooksSerializer
+
+
 class BooksApiView(APIView):
     def get(self, request):
         w = Books.objects.all()
@@ -15,15 +20,35 @@ class BooksApiView(APIView):
     def post(self, request):
         serializer = BooksSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        post_new = Books.objects.create(
-            title=request.data['title'],
-            content=request.data['content'],
-            cat_id=request.data['cat_id']
+        return Response({'post': serializer.data})
 
-        )
-        return Response({'post': BooksSerializer(post_new).data})
+    def put(self, request, *args, **kwargs):
+        pk = kwargs.get('pk', None)
+        print(f'put {kwargs}')
+        if not pk:
+            return Response({'error': 'Method PUT not allowed'})
 
-# class BooksApiView(generics.ListAPIView):
-#     queryset = Books.objects.all()
-#     serializer_class = BooksSerializer
+        try:
+            instance = Books.objects.get(pk=pk)
+        except:
+            return Response({'error': "Object doesn't not exists"})
+
+        serializer = BooksSerializer(data=request.data, instance=instance)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({'post': serializer.data})
+
+    def delete(self, request, *args, **kwargs):
+        pk = kwargs.get("pk", None)
+        if not pk:
+            return Response({"error": "Method DELETE not allowed"})
+
+        try:
+            Books.objects.get(id=pk).delete()
+        except:
+            return Response({'error': "Object doesn't not exists"})
+
+        return Response({'post': f'delete post {pk}'})
